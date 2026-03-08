@@ -236,8 +236,7 @@ fig_heat = go.Figure(data=go.Heatmap(
     textfont=dict(size=13, color="#E8ECF1"),
     showscale=True,
     colorbar=dict(
-        title="Risk Score",
-        titlefont=dict(color="#8B95A8"),
+        title=dict(text="Risk Score", font=dict(color="#8B95A8")),
         tickfont=dict(color="#8B95A8"),
     ),
 ))
@@ -500,12 +499,11 @@ with col_exp3:
     )
 
 # ── Footer ──
-st.markdown("""
+st.markdown(f"""
 <div style="text-align:center; padding:2rem 0 1rem 0; border-top:1px solid rgba(0,212,170,0.08); margin-top:2rem;">
     <div style="font-size:0.72rem; color:#4B5563;">
         <strong style="color:#6B7280;">StratForge</strong> · Executive Report ·
         Generated {datetime.now().strftime('%B %d, %Y')}
     </div>
 </div>
-""".replace("{datetime.now().strftime('%B %d, %Y')}", datetime.now().strftime('%B %d, %Y')),
-unsafe_allow_html=True)
+""", unsafe_allow_html=True)
