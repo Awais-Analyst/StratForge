@@ -12,7 +12,7 @@ from utils.styling import (
     format_currency,
     format_percentage,
 )
-from utils.data_utils import generate_synthetic_data, init_session_state, compute_kpis
+from utils.data_utils import generate_synthetic_data, init_session_state, compute_kpis, get_col, auto_map_columns
 
 # ── Page Config ──
 st.set_page_config(
@@ -102,77 +102,81 @@ st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
 
 # ── KPI Overview ──
 df = st.session_state.df
+
+# Auto-map on first load
+if not st.session_state.column_mapping:
+    auto_mapping, auto_mkt = auto_map_columns(df)
+    st.session_state.column_mapping = auto_mapping
+    st.session_state.marketing_columns = auto_mkt
+
 kpis = compute_kpis(df)
 
-col1, col2, col3, col4, col5 = st.columns(5)
+# Only show KPI cards for mapped fields
+kpi_cards = []
+if get_col("revenue"):
+    kpi_cards.append(("Total Revenue", format_currency(kpis.get("total_revenue", 0)),
+                     f"{kpis.get('revenue_growth', 0):.1f}% growth" if "revenue_growth" in kpis else None,
+                     kpis.get("revenue_growth", 0) > 0))
+if get_col("profit"):
+    kpi_cards.append(("Total Profit", format_currency(kpis.get("total_profit", 0)),
+                     f"{kpis.get('avg_profit_margin', 0):.1f}% margin",
+                     kpis.get("avg_profit_margin", 0) > 10))
+if get_col("customers"):
+    kpi_cards.append(("Customer Base", f"{kpis.get('current_customers', 0):,}", None, True))
+if get_col("churn"):
+    kpi_cards.append(("Avg Churn", f"{kpis.get('avg_churn', 0):.1f}%", "Monthly rate",
+                     kpis.get("avg_churn", 5) < 5))
+if get_col("satisfaction"):
+    kpi_cards.append(("Satisfaction", f"{kpis.get('avg_satisfaction', 0):.1f}/10", None,
+                     kpis.get("avg_satisfaction", 0) > 7.5))
 
-with col1:
-    render_kpi_card(
-        "Total Revenue",
-        format_currency(kpis.get("total_revenue", 0)),
-        f"{kpis.get('revenue_growth', 0):.1f}% growth" if "revenue_growth" in kpis else None,
-        kpis.get("revenue_growth", 0) > 0,
-    )
-with col2:
-    render_kpi_card(
-        "Total Profit",
-        format_currency(kpis.get("total_profit", 0)),
-        f"{kpis.get('avg_profit_margin', 0):.1f}% margin",
-        kpis.get("avg_profit_margin", 0) > 10,
-    )
-with col3:
-    render_kpi_card(
-        "Customer Base",
-        f"{kpis.get('current_customers', 0):,}",
-        None,
-    )
-with col4:
-    render_kpi_card(
-        "Avg Churn",
-        f"{kpis.get('avg_churn', 0):.1f}%",
-        "Monthly rate",
-        kpis.get("avg_churn", 5) < 5,
-    )
-with col5:
-    render_kpi_card(
-        "Satisfaction",
-        f"{kpis.get('avg_satisfaction', 0):.1f}/10",
-        None,
-        kpis.get("avg_satisfaction", 0) > 7.5,
-    )
+if kpi_cards:
+    cols = st.columns(len(kpi_cards))
+    for col, (title, value, delta, positive) in zip(cols, kpi_cards):
+        with col:
+            render_kpi_card(title, value, delta, positive)
+else:
+    st.info("📌 Map your columns in **Data Studio** to see KPI cards here.")
 
 st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
 
-# ── Quick Revenue & Profit Chart ──
-render_section_header("📈", "Revenue & Profit Trend")
+# ── Quick Trend Chart ──
+date_col = get_col("date")
+rev_col = get_col("revenue")
+profit_col = get_col("profit")
 
-import plotly.graph_objects as go
-from utils.styling import STRATFORGE_TEMPLATE
+if date_col and (rev_col or profit_col):
+    render_section_header("📈", "Key Metrics Trend")
 
-fig = go.Figure()
-fig.add_trace(go.Scatter(
-    x=df["Date"], y=df["Revenue"],
-    name="Revenue",
-    line=dict(color="#00D4AA", width=2.5),
-    fill="tozeroy",
-    fillcolor="rgba(0, 212, 170, 0.08)",
-))
-fig.add_trace(go.Scatter(
-    x=df["Date"], y=df["Profit"],
-    name="Profit",
-    line=dict(color="#00B4D8", width=2.5),
-    fill="tozeroy",
-    fillcolor="rgba(0, 180, 216, 0.06)",
-))
-fig.update_layout(
-    template=STRATFORGE_TEMPLATE,
-    height=380,
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-    xaxis_title="",
-    yaxis_title="Amount (₹)",
-    margin=dict(l=50, r=20, t=30, b=30),
-)
-st.plotly_chart(fig, use_container_width=True)
+    import plotly.graph_objects as go
+    from utils.styling import STRATFORGE_TEMPLATE
+
+    fig = go.Figure()
+    if rev_col:
+        fig.add_trace(go.Scatter(
+            x=df[date_col], y=df[rev_col],
+            name=rev_col.replace("_", " "),
+            line=dict(color="#00D4AA", width=2.5),
+            fill="tozeroy",
+            fillcolor="rgba(0, 212, 170, 0.08)",
+        ))
+    if profit_col:
+        fig.add_trace(go.Scatter(
+            x=df[date_col], y=df[profit_col],
+            name=profit_col.replace("_", " "),
+            line=dict(color="#00B4D8", width=2.5),
+            fill="tozeroy",
+            fillcolor="rgba(0, 180, 216, 0.06)",
+        ))
+    fig.update_layout(
+        template=STRATFORGE_TEMPLATE,
+        height=380,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        xaxis_title="",
+        yaxis_title="Amount (₹)",
+        margin=dict(l=50, r=20, t=30, b=30),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 # ── Feature Navigation Tiles ──
 st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
@@ -193,19 +197,21 @@ for col, (icon, title, desc) in zip([col1, col2, col3, col4, col5], tiles):
         st.markdown(render_feature_tile(icon, title, desc), unsafe_allow_html=True)
 
 # ── Marketing Channel Breakdown ──
-st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
-render_section_header("💰", "Marketing Channel Spend")
+mkt_cols = st.session_state.get("marketing_columns", [])
+available_mkt = [c for c in mkt_cols if c in df.columns]
 
-marketing_cols = ["Digital_Marketing", "Print_Marketing", "TV_Marketing",
-                  "Social_Media_Marketing", "Event_Marketing"]
-available_mkt = [c for c in marketing_cols if c in df.columns]
+if available_mkt and date_col:
+    st.markdown("<div style='height: 2rem;'></div>", unsafe_allow_html=True)
+    render_section_header("💰", "Marketing Channel Spend")
 
-if available_mkt:
+    import plotly.graph_objects as go
+    from utils.styling import STRATFORGE_TEMPLATE
+
     fig_mkt = go.Figure()
     colors = ["#00D4AA", "#00B4D8", "#7C3AED", "#FFB74D", "#FF6B6B"]
     for i, col_name in enumerate(available_mkt):
         fig_mkt.add_trace(go.Bar(
-            x=df["Date"], y=df[col_name],
+            x=df[date_col], y=df[col_name],
             name=col_name.replace("_", " "),
             marker_color=colors[i % len(colors)],
             opacity=0.85,
