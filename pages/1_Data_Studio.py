@@ -105,8 +105,29 @@ if any(c in num_cols for c in ["Revenue", "Profit", "Customer_Base"]):
         render_kpi_card("Avg Satisfaction", f"{kpis.get('avg_satisfaction', 0):.1f}/10")
 
 # ── Data Preview ──
-with st.expander("🔍 Data Preview", expanded=False):
-    st.dataframe(df.head(50), use_container_width=True, height=300)
+with st.expander("🔍 Data Preview (First 5 Rows)", expanded=False):
+    st.dataframe(df.head(5), use_container_width=True)
+    st.caption(f"Showing 5 of {len(df)} rows · {len(df.columns)} columns")
+
+# ── Descriptive Statistics ──
+with st.expander("📋 Descriptive Statistics", expanded=False):
+    desc = df.describe().T
+    desc.columns = ["Count", "Mean", "Std", "Min", "25%", "50% (Median)", "75%", "Max"]
+    st.dataframe(desc.style.format("{:,.2f}"), use_container_width=True, height=400)
+
+    # Data types & info summary
+    st.markdown("##### 📌 Column Info")
+    info_data = []
+    for col in df.columns:
+        non_null = df[col].notna().sum()
+        info_data.append({
+            "Column": col,
+            "Dtype": str(df[col].dtype),
+            "Non-Null": f"{non_null}/{len(df)}",
+            "Missing %": f"{(1 - non_null/len(df))*100:.1f}%",
+            "Unique": df[col].nunique(),
+        })
+    st.dataframe(pd.DataFrame(info_data), use_container_width=True, hide_index=True)
 
 # ── Interactive Charts ──
 render_section_header("📈", "Interactive Visualizations")
