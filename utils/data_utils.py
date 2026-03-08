@@ -135,6 +135,39 @@ def get_summary_stats(df, numeric_cols):
     return stats
 
 
+# ═══ Column Mapping Constants ═══
+MAPPING_FIELDS = {
+    "date": {"label": "📅 Date / Time Column", "required": True},
+    "revenue": {"label": "💰 Revenue / Sales", "required": False},
+    "profit": {"label": "📈 Profit / Net Income", "required": False},
+    "expenses": {"label": "💸 Total Expenses", "required": False},
+    "operating_expenses": {"label": "🏭 Operating Expenses", "required": False},
+    "customers": {"label": "👥 Customer Base / Count", "required": False},
+    "new_customers": {"label": "🆕 New Customers", "required": False},
+    "churn": {"label": "📉 Churn Rate", "required": False},
+    "satisfaction": {"label": "⭐ Satisfaction Score", "required": False},
+    "unit_price": {"label": "🏷️ Unit Price", "required": False},
+    "sales_volume": {"label": "📦 Sales Volume", "required": False},
+    "total_marketing": {"label": "📣 Total Marketing Spend", "required": False},
+}
+
+# Auto-mapping: common column name variants → mapping field
+_AUTO_MAP_HINTS = {
+    "date": ["date", "month", "period", "time", "timestamp", "year_month"],
+    "revenue": ["revenue", "sales", "income", "turnover", "total_sales", "gross_revenue"],
+    "profit": ["profit", "net_income", "net_profit", "earnings", "margin"],
+    "expenses": ["total_expenses", "expenses", "costs", "total_cost"],
+    "operating_expenses": ["operating_expenses", "opex", "operating_cost"],
+    "customers": ["customer_base", "customers", "total_customers", "customer_count", "users"],
+    "new_customers": ["new_customers", "acquired_customers", "new_users"],
+    "churn": ["churn_rate", "churn", "attrition", "attrition_rate"],
+    "satisfaction": ["satisfaction_score", "satisfaction", "csat", "nps", "rating"],
+    "unit_price": ["unit_price", "price", "avg_price", "average_price"],
+    "sales_volume": ["sales_volume", "volume", "units_sold", "quantity"],
+    "total_marketing": ["total_marketing_spend", "marketing_spend", "marketing", "ad_spend"],
+}
+
+
 def init_session_state():
     """Initialize session state with default values."""
     defaults = {
@@ -144,10 +177,42 @@ def init_session_state():
         "simulation_results": None,
         "optimization_results": None,
         "data_source": "synthetic",
+        "column_mapping": {},
+        "marketing_columns": [],
     }
     for key, value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = value
+
+
+def get_col(field):
+    """Get the actual column name for a mapped field. Returns None if not mapped."""
+    col_name = st.session_state.get("column_mapping", {}).get(field)
+    if col_name and st.session_state.df is not None and col_name in st.session_state.df.columns:
+        return col_name
+    return None
+
+
+def auto_map_columns(df):
+    """Try to auto-detect column mappings based on common naming conventions."""
+    mapping = {}
+    cols_lower = {c.lower().strip(): c for c in df.columns}
+
+    for field, hints in _AUTO_MAP_HINTS.items():
+        for hint in hints:
+            if hint in cols_lower:
+                mapping[field] = cols_lower[hint]
+                break
+
+    # Auto-detect marketing channel columns
+    mkt_keywords = ["marketing", "ad_spend", "advertising", "campaign"]
+    mkt_cols = []
+    for col in df.columns:
+        col_l = col.lower()
+        if any(kw in col_l for kw in mkt_keywords) and col != mapping.get("total_marketing"):
+            mkt_cols.append(col)
+
+    return mapping, mkt_cols
 
 
 def load_uploaded_file(uploaded_file):
@@ -173,25 +238,34 @@ def load_uploaded_file(uploaded_file):
 
 
 def compute_kpis(df):
-    """Compute key KPIs from the dataset."""
+    """Compute key KPIs from the dataset using mapped columns."""
     kpis = {}
-    num_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    rev_col = get_col("revenue")
+    profit_col = get_col("profit")
+    churn_col = get_col("churn")
+    cust_col = get_col("customers")
+    sat_col = get_col("satisfaction")
 
-    if "Revenue" in num_cols:
-        kpis["total_revenue"] = df["Revenue"].sum()
-        kpis["avg_revenue"] = df["Revenue"].mean()
-        if len(df) >= 2:
+    if rev_col and rev_col in df.columns:
+        kpis["total_revenue"] = df[rev_col].sum()
+        kpis["avg_revenue"] = df[rev_col].mean()
+        if len(df) >= 2 and df[rev_col].iloc[0] != 0:
             kpis["revenue_growth"] = (
-                (df["Revenue"].iloc[-1] - df["Revenue"].iloc[0]) / df["Revenue"].iloc[0] * 100
+                (df[rev_col].iloc[-1] - df[rev_col].iloc[0]) / df[rev_col].iloc[0] * 100
             )
-    if "Profit" in num_cols:
-        kpis["total_profit"] = df["Profit"].sum()
-        kpis["avg_profit_margin"] = (df["Profit"].sum() / df["Revenue"].sum() * 100) if "Revenue" in num_cols and df["Revenue"].sum() != 0 else 0
-    if "Churn_Rate" in num_cols:
-        kpis["avg_churn"] = df["Churn_Rate"].mean() * 100
-    if "Customer_Base" in num_cols:
-        kpis["current_customers"] = int(df["Customer_Base"].iloc[-1])
-    if "Satisfaction_Score" in num_cols:
-        kpis["avg_satisfaction"] = df["Satisfaction_Score"].mean()
+    if profit_col and profit_col in df.columns:
+        kpis["total_profit"] = df[profit_col].sum()
+        if rev_col and rev_col in df.columns and df[rev_col].sum() != 0:
+            kpis["avg_profit_margin"] = df[profit_col].sum() / df[rev_col].sum() * 100
+        else:
+            kpis["avg_profit_margin"] = 0
+    if churn_col and churn_col in df.columns:
+        churn_vals = df[churn_col]
+        # Auto-detect if values are ratios (0-1) or percentages (0-100)
+        kpis["avg_churn"] = churn_vals.mean() * 100 if churn_vals.max() <= 1 else churn_vals.mean()
+    if cust_col and cust_col in df.columns:
+        kpis["current_customers"] = int(df[cust_col].iloc[-1])
+    if sat_col and sat_col in df.columns:
+        kpis["avg_satisfaction"] = df[sat_col].mean()
 
     return kpis
