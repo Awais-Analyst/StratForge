@@ -172,7 +172,7 @@ fig.update_layout(
     yaxis_title="Amount (₹)",
     margin=dict(l=50, r=20, t=30, b=30),
 )
-st.plotly_chart(fig, width="stretch")
+st.plotly_chart(fig, use_container_width=True)
 
 # ── Feature Navigation Tiles ──
 st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
@@ -219,7 +219,7 @@ if available_mkt:
         yaxis_title="Spend (₹)",
         margin=dict(l=50, r=20, t=30, b=30),
     )
-    st.plotly_chart(fig_mkt, width="stretch")
+    st.plotly_chart(fig_mkt, use_container_width=True)
 
 # ── Footer ──
 st.markdown("""
