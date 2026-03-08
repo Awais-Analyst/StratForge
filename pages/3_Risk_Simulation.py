@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from utils.styling import apply_custom_css, render_kpi_card, render_section_header, STRATFORGE_TEMPLATE, format_currency
-from utils.data_utils import init_session_state, compute_kpis
+from utils.data_utils import init_session_state, compute_kpis, get_col
 from utils.monte_carlo import run_simulation, RISK_PRESETS
 
 st.set_page_config(page_title="StratForge – Risk Simulation", page_icon="🎲", layout="wide")
@@ -36,8 +36,9 @@ if not st.session_state.data_loaded or st.session_state.df is None:
 
 df = st.session_state.df
 
-# Determine base value from data
-base_value = float(df["Revenue"].iloc[-1]) if "Revenue" in df.columns else 1_000_000
+# Determine base value from mapped revenue column
+rev_col = get_col("revenue")
+base_value = float(df[rev_col].iloc[-1]) if rev_col and rev_col in df.columns else 1_000_000
 
 # ── Configuration ──
 col_cfg, col_main = st.columns([1, 3])
