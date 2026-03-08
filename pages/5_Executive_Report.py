@@ -65,16 +65,16 @@ with g1:
     fig_g1 = go.Figure(go.Indicator(
         mode="gauge+number+delta",
         value=total_revenue / 1e7,
-        number=dict(suffix=" Cr", font=dict(size=28, color="#E8ECF1")),
+        number=dict(suffix=" Cr", font=dict(size=22, color="#E8ECF1")),
         delta=dict(
             reference=total_revenue * 0.85 / 1e7,
             increasing=dict(color="#00D4AA"),
             decreasing=dict(color="#FF6B6B"),
-            font=dict(size=14),
+            font=dict(size=12),
         ),
-        title=dict(text="Total Revenue", font=dict(size=14, color="#8B95A8")),
+        title=dict(text="Total Revenue", font=dict(size=13, color="#8B95A8")),
         gauge=dict(
-            axis=dict(range=[0, revenue_target / 1e7], tickfont=dict(size=10, color="#6B7280")),
+            axis=dict(range=[0, revenue_target / 1e7], tickfont=dict(size=9, color="#6B7280")),
             bar=dict(color="#00D4AA"),
             bgcolor="rgba(17,24,39,0.5)",
             bordercolor="rgba(0,212,170,0.15)",
@@ -87,7 +87,7 @@ with g1:
     ))
     fig_g1.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter"),
-        height=220, margin=dict(l=30, r=30, t=60, b=10),
+        height=220, margin=dict(l=35, r=35, t=60, b=10),
     )
     st.plotly_chart(fig_g1, use_container_width=True)
 
@@ -97,10 +97,10 @@ with g2:
     fig_g2 = go.Figure(go.Indicator(
         mode="gauge+number",
         value=avg_margin,
-        number=dict(suffix="%", font=dict(size=28, color="#E8ECF1")),
-        title=dict(text="Profit Margin", font=dict(size=14, color="#8B95A8")),
+        number=dict(suffix="%", font=dict(size=22, color="#E8ECF1")),
+        title=dict(text="Profit Margin", font=dict(size=13, color="#8B95A8")),
         gauge=dict(
-            axis=dict(range=[0, 50], tickfont=dict(size=10, color="#6B7280")),
+            axis=dict(range=[0, 50], tickfont=dict(size=9, color="#6B7280")),
             bar=dict(color="#00B4D8"),
             bgcolor="rgba(17,24,39,0.5)",
             bordercolor="rgba(0,180,216,0.15)",
@@ -113,7 +113,7 @@ with g2:
     ))
     fig_g2.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter"),
-        height=220, margin=dict(l=30, r=30, t=60, b=10),
+        height=220, margin=dict(l=35, r=35, t=60, b=10),
     )
     st.plotly_chart(fig_g2, use_container_width=True)
 
@@ -123,10 +123,10 @@ with g3:
     fig_g3 = go.Figure(go.Indicator(
         mode="gauge+number",
         value=growth,
-        number=dict(suffix="%", font=dict(size=28, color="#E8ECF1")),
-        title=dict(text="Revenue Growth", font=dict(size=14, color="#8B95A8")),
+        number=dict(suffix="%", font=dict(size=22, color="#E8ECF1")),
+        title=dict(text="Revenue Growth", font=dict(size=13, color="#8B95A8")),
         gauge=dict(
-            axis=dict(range=[-20, 200], tickfont=dict(size=10, color="#6B7280")),
+            axis=dict(range=[-20, 200], tickfont=dict(size=9, color="#6B7280")),
             bar=dict(color="#7C3AED"),
             bgcolor="rgba(17,24,39,0.5)",
             bordercolor="rgba(124,58,237,0.15)",
@@ -139,7 +139,7 @@ with g3:
     ))
     fig_g3.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter"),
-        height=220, margin=dict(l=30, r=30, t=60, b=10),
+        height=220, margin=dict(l=35, r=35, t=60, b=10),
     )
     st.plotly_chart(fig_g3, use_container_width=True)
 
@@ -149,10 +149,10 @@ with g4:
     fig_g4 = go.Figure(go.Indicator(
         mode="gauge+number",
         value=satisfaction,
-        number=dict(suffix="/10", font=dict(size=28, color="#E8ECF1")),
-        title=dict(text="Satisfaction", font=dict(size=14, color="#8B95A8")),
+        number=dict(suffix="/10", font=dict(size=22, color="#E8ECF1")),
+        title=dict(text="Satisfaction", font=dict(size=13, color="#8B95A8")),
         gauge=dict(
-            axis=dict(range=[0, 10], tickfont=dict(size=10, color="#6B7280")),
+            axis=dict(range=[0, 10], tickfont=dict(size=9, color="#6B7280")),
             bar=dict(color="#FFB74D"),
             bgcolor="rgba(17,24,39,0.5)",
             bordercolor="rgba(255,183,77,0.15)",
@@ -165,7 +165,7 @@ with g4:
     ))
     fig_g4.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", font=dict(family="Inter"),
-        height=220, margin=dict(l=30, r=30, t=60, b=10),
+        height=220, margin=dict(l=35, r=35, t=60, b=10),
     )
     st.plotly_chart(fig_g4, use_container_width=True)
 
