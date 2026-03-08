@@ -18,6 +18,9 @@ from utils.data_utils import (
     init_session_state,
     load_uploaded_file,
     compute_kpis,
+    auto_map_columns,
+    get_col,
+    MAPPING_FIELDS,
 )
 
 st.set_page_config(page_title="StratForge – Data Studio", page_icon="📊", layout="wide")
@@ -74,6 +77,63 @@ col_types = auto_detect_columns(df)
 date_cols = col_types["date"]
 num_cols = col_types["numeric"]
 cat_cols = col_types["categorical"]
+
+# ── Column Mapping ──
+# Auto-map on first load if no mappings exist
+if not st.session_state.column_mapping:
+    auto_mapping, auto_mkt = auto_map_columns(df)
+    st.session_state.column_mapping = auto_mapping
+    st.session_state.marketing_columns = auto_mkt
+
+with st.expander("📌 Map Your Columns", expanded=not bool(st.session_state.column_mapping)):
+    st.markdown("""
+    <div style="font-size:0.82rem; color:#8B95A8; margin-bottom:0.8rem;">
+        Map your data columns to the expected business fields. Only <strong style="color:#FF6B6B;">Date</strong> is required — all others are optional.
+        Unmapped fields will simply be hidden from the relevant pages.
+    </div>
+    """, unsafe_allow_html=True)
+
+    all_cols = ["— None —"] + list(df.columns)
+    current_map = st.session_state.column_mapping
+
+    mc1, mc2, mc3 = st.columns(3)
+    mapping_updates = {}
+
+    for i, (field, info) in enumerate(MAPPING_FIELDS.items()):
+        target_col = [mc1, mc2, mc3][i % 3]
+        with target_col:
+            current_val = current_map.get(field, "— None —")
+            if current_val not in all_cols:
+                current_val = "— None —"
+            idx = all_cols.index(current_val) if current_val in all_cols else 0
+            label = info["label"] + (" *" if info["required"] else "")
+            selected = st.selectbox(
+                label, all_cols, index=idx,
+                key=f"map_{field}",
+            )
+            if selected != "— None —":
+                mapping_updates[field] = selected
+
+    # Marketing channel columns (multi-select)
+    st.markdown("##### 📣 Marketing Channel Columns (optional)")
+    mkt_options = [c for c in num_cols]
+    current_mkt = [c for c in st.session_state.marketing_columns if c in mkt_options]
+    selected_mkt = st.multiselect(
+        "Select all marketing channel columns",
+        mkt_options,
+        default=current_mkt,
+        key="map_mkt_channels",
+    )
+
+    if st.button("✅ Apply Mapping", use_container_width=True, key="apply_mapping"):
+        st.session_state.column_mapping = mapping_updates
+        st.session_state.marketing_columns = selected_mkt
+        st.rerun()
+
+    # Show current mapping status
+    mapped_count = len(st.session_state.column_mapping)
+    total_fields = len(MAPPING_FIELDS)
+    st.caption(f"Mapped: {mapped_count}/{total_fields} fields · {len(st.session_state.marketing_columns)} marketing channels")
 
 # ── Column Detection Summary ──
 st.markdown(f"""
