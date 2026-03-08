@@ -58,7 +58,7 @@ with col_upload:
 
 with col_synthetic:
     st.markdown("<div style='height:0.5rem;'></div>", unsafe_allow_html=True)
-    if st.button("🔄 Load Built-in Dataset", use_container_width=True):
+    if st.button("🔄 Load Built-in Dataset", width="stretch"):
         st.session_state.df = generate_synthetic_data()
         st.session_state.data_loaded = True
         st.session_state.data_source = "synthetic"
@@ -106,7 +106,7 @@ if any(c in num_cols for c in ["Revenue", "Profit", "Customer_Base"]):
 
 # ── Data Preview ──
 with st.expander("🔍 Data Preview", expanded=False):
-    st.dataframe(df.head(50), use_container_width=True, height=300)
+    st.dataframe(df.head(50), width="stretch", height=300)
 
 # ── Interactive Charts ──
 render_section_header("📈", "Interactive Visualizations")
@@ -143,7 +143,7 @@ with tab_trend:
                 title="Time Series Trends",
                 legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0.5, xanchor="center"),
             )
-            st.plotly_chart(fig_line, use_container_width=True)
+            st.plotly_chart(fig_line, width="stretch")
 
             # Area Chart
             fig_area = go.Figure()
@@ -159,7 +159,7 @@ with tab_trend:
                 template=STRATFORGE_TEMPLATE, height=350,
                 title="Stacked Area View",
             )
-            st.plotly_chart(fig_area, use_container_width=True)
+            st.plotly_chart(fig_area, width="stretch")
 
             # Moving Averages
             if len(df) > 6:
@@ -176,7 +176,7 @@ with tab_trend:
                             name=f"{window}-MA", line=dict(color=color, width=2.5),
                         ))
                 fig_ma.update_layout(template=STRATFORGE_TEMPLATE, height=350, title=f"Moving Averages — {ma_col}")
-                st.plotly_chart(fig_ma, use_container_width=True)
+                st.plotly_chart(fig_ma, width="stretch")
 
     else:
         st.info("No date + numeric column combination found for trend charts.")
@@ -207,7 +207,7 @@ with tab_dist:
                         title=f"Distribution — {col_name.replace('_', ' ')}",
                         showlegend=False,
                     )
-                    st.plotly_chart(fig_hist, use_container_width=True)
+                    st.plotly_chart(fig_hist, width="stretch")
 
             # Box Plots
             fig_box = go.Figure()
@@ -219,7 +219,7 @@ with tab_dist:
                     boxmean="sd",
                 ))
             fig_box.update_layout(template=STRATFORGE_TEMPLATE, height=380, title="Box Plot Comparison")
-            st.plotly_chart(fig_box, use_container_width=True)
+            st.plotly_chart(fig_box, width="stretch")
 
             # Violin Plots
             if len(dist_cols) <= 6:
@@ -231,7 +231,7 @@ with tab_dist:
                         box_visible=True, meanline_visible=True,
                     ))
                 fig_violin.update_layout(template=STRATFORGE_TEMPLATE, height=380, title="Violin Plots")
-                st.plotly_chart(fig_violin, use_container_width=True)
+                st.plotly_chart(fig_violin, width="stretch")
     else:
         st.info("No numeric columns found for distribution analysis.")
 
@@ -262,7 +262,7 @@ with tab_corr:
                 template=STRATFORGE_TEMPLATE, height=500,
                 title="Correlation Heatmap",
             )
-            st.plotly_chart(fig_heat, use_container_width=True)
+            st.plotly_chart(fig_heat, width="stretch")
 
             # Scatter Matrix (first 4 columns only for performance)
             scatter_cols = corr_cols[:4]
@@ -278,7 +278,7 @@ with tab_corr:
                     title="Scatter Matrix",
                 )
                 fig_scatter.update_traces(diagonal_visible=False, marker=dict(size=3))
-                st.plotly_chart(fig_scatter, use_container_width=True)
+                st.plotly_chart(fig_scatter, width="stretch")
     else:
         st.info("Need at least 2 numeric columns for correlation analysis.")
 
@@ -308,7 +308,7 @@ with tab_comp:
                 title=f"Avg {comp_metric.replace('_', ' ')} by {comp_cat.replace('_', ' ')}",
                 showlegend=False,
             )
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, width="stretch")
 
         with c2:
             # Pie / Donut Chart
@@ -324,7 +324,7 @@ with tab_comp:
                 title=f"{comp_metric.replace('_', ' ')} Share",
                 showlegend=False,
             )
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_pie, width="stretch")
 
         # Treemap
         if len(cat_cols) >= 2:
@@ -336,7 +336,7 @@ with tab_comp:
                     color_continuous_scale=["#111827", "#00B4D8", "#00D4AA"],
                 )
                 fig_tree.update_layout(template=STRATFORGE_TEMPLATE, height=400, title="Treemap")
-                st.plotly_chart(fig_tree, use_container_width=True)
+                st.plotly_chart(fig_tree, width="stretch")
 
         # Sunburst
         if len(cat_cols) >= 2:
@@ -348,7 +348,7 @@ with tab_comp:
                     color_continuous_scale=["#111827", "#7C3AED", "#00D4AA"],
                 )
                 fig_sun.update_layout(template=STRATFORGE_TEMPLATE, height=450, title="Sunburst Chart")
-                st.plotly_chart(fig_sun, use_container_width=True)
+                st.plotly_chart(fig_sun, width="stretch")
     else:
         st.info("Need categorical + numeric columns for comparison charts.")
 
@@ -380,7 +380,7 @@ with tab_advanced:
                 title=f"Month-over-Month Changes — {adv_col.replace('_', ' ')}",
                 showlegend=False,
             )
-            st.plotly_chart(fig_waterfall, use_container_width=True)
+            st.plotly_chart(fig_waterfall, width="stretch")
 
         # Cumulative Sum
         fig_cum = go.Figure()
@@ -392,7 +392,7 @@ with tab_advanced:
             name="Cumulative",
         ))
         fig_cum.update_layout(template=STRATFORGE_TEMPLATE, height=350, title=f"Cumulative — {adv_col.replace('_', ' ')}")
-        st.plotly_chart(fig_cum, use_container_width=True)
+        st.plotly_chart(fig_cum, width="stretch")
 
         # Year-over-Year Comparison
         if pd.api.types.is_datetime64_any_dtype(df[date_col]) and len(df) > 12:
@@ -420,7 +420,7 @@ with tab_advanced:
                            ticktext=["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]),
             )
-            st.plotly_chart(fig_yoy, use_container_width=True)
+            st.plotly_chart(fig_yoy, width="stretch")
     else:
         st.info("Need date + numeric columns for advanced charts.")
 
@@ -439,7 +439,7 @@ with st.expander("🩺 Data Quality Report", expanded=False):
             "Unique": df[col].nunique(),
         })
     quality_df = pd.DataFrame(quality_data)
-    st.dataframe(quality_df, use_container_width=True, height=400)
+    st.dataframe(quality_df, width="stretch", height=400)
 
     # Download data as CSV
     st.download_button(
@@ -447,5 +447,5 @@ with st.expander("🩺 Data Quality Report", expanded=False):
         data=df.to_csv(index=False).encode("utf-8"),
         file_name="stratforge_data.csv",
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
     )
