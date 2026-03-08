@@ -322,7 +322,6 @@ def apply_custom_css():
         /* ── Hide Streamlit defaults ── */
         #MainMenu { visibility: hidden; }
         footer { visibility: hidden; }
-        header { visibility: hidden; }
     </style>
     """, unsafe_allow_html=True)
 
