@@ -19,7 +19,7 @@ from utils.styling import (
     format_currency,
     format_percentage,
 )
-from utils.data_utils import init_session_state, compute_kpis, auto_detect_columns
+from utils.data_utils import init_session_state, compute_kpis, auto_detect_columns, get_col
 
 st.set_page_config(page_title="StratForge – Executive Report", page_icon="📈", layout="wide")
 apply_custom_css()
@@ -288,25 +288,22 @@ else:
                     "danger"))
 
 # Marketing insights
-mkt_cols = ["Digital_Marketing", "Print_Marketing", "TV_Marketing", "Social_Media_Marketing"]
-available_mkt = [c for c in mkt_cols if c in df.columns]
-if available_mkt and "Revenue" in df.columns:
+mkt_channel_cols = st.session_state.get("marketing_columns", [])
+available_mkt = [c for c in mkt_channel_cols if c in df.columns]
+rev_col_ins = get_col("revenue")
+if available_mkt and rev_col_ins:
     total_mkt = df[available_mkt].sum(axis=1).mean()
-    mkt_ratio = total_mkt / df["Revenue"].mean() * 100 if df["Revenue"].mean() > 0 else 0
+    mkt_ratio = total_mkt / df[rev_col_ins].mean() * 100 if df[rev_col_ins].mean() > 0 else 0
 
-    if "Digital_Marketing" in df.columns and "Print_Marketing" in df.columns:
-        digital_share = df["Digital_Marketing"].sum() / df[available_mkt].sum().sum() * 100
-        if digital_share < 30:
-            insights.append(("💡", "Increase Digital Marketing",
-                            f"Digital is only **{digital_share:.0f}%** of marketing spend. Consider shifting **+15-25%** to digital channels for higher ROI.",
-                            "warning"))
-        else:
-            insights.append(("✅", "Digital-First Strategy Active",
-                            f"Digital accounts for **{digital_share:.0f}%** of marketing — well positioned for modern growth.",
-                            "success"))
+    if len(available_mkt) >= 2:
+        first_ch_share = df[available_mkt[0]].sum() / df[available_mkt].sum().sum() * 100
+        insights.append(("📊", "Marketing Mix Analysis",
+                        f"Top channel **{available_mkt[0].replace('_', ' ')}** accounts for **{first_ch_share:.0f}%** of total marketing spend across {len(available_mkt)} channels.",
+                        "success" if first_ch_share < 60 else "warning"))
 
 # Churn insights
-if "Churn_Rate" in df.columns:
+churn_col_ins = get_col("churn")
+if churn_col_ins:
     avg_churn = kpis.get("avg_churn", 5)
     if avg_churn > 6:
         insights.append(("🔴", "High Customer Churn",
@@ -354,45 +351,73 @@ for icon, title, text, status in insights:
 # ═══════════════════════════════════════════════════
 #  TREND SUMMARY CHART
 # ═══════════════════════════════════════════════════
-if date_cols and "Revenue" in num_cols and "Profit" in num_cols:
+date_col_name = get_col("date")
+rev_col_name = get_col("revenue")
+profit_col_name = get_col("profit")
+mkt_col_name = get_col("total_marketing")
+cust_col_name = get_col("customers")
+
+# Build subplot titles dynamically
+subplot_titles = []
+subplot_traces = []  # list of (row, col, trace) tuples
+
+if rev_col_name:
+    subplot_titles.append(f"{rev_col_name.replace('_', ' ')} Trend")
+if profit_col_name:
+    subplot_titles.append(f"{profit_col_name.replace('_', ' ')} Trend")
+if mkt_col_name and rev_col_name:
+    subplot_titles.append("Marketing Efficiency")
+if cust_col_name:
+    subplot_titles.append("Customer Health")
+
+if date_col_name and len(subplot_titles) >= 2:
     render_section_header("📊", "Performance Summary")
 
+    n_plots = len(subplot_titles)
+    n_rows = (n_plots + 1) // 2
+    n_c = min(n_plots, 2)
+
     fig_summary = make_subplots(
-        rows=2, cols=2,
-        subplot_titles=["Revenue Trend", "Profit Trend", "Marketing Efficiency", "Customer Health"],
+        rows=n_rows, cols=n_c,
+        subplot_titles=subplot_titles,
         vertical_spacing=0.14, horizontal_spacing=0.08,
     )
-    date_col = date_cols[0]
 
-    # Revenue
-    fig_summary.add_trace(go.Scatter(
-        x=df[date_col], y=df["Revenue"],
-        line=dict(color="#00D4AA", width=2), fill="tozeroy",
-        fillcolor="rgba(0,212,170,0.08)", showlegend=False,
-    ), row=1, col=1)
-
-    # Profit
-    fig_summary.add_trace(go.Scatter(
-        x=df[date_col], y=df["Profit"],
-        line=dict(color="#00B4D8", width=2), fill="tozeroy",
-        fillcolor="rgba(0,180,216,0.08)", showlegend=False,
-    ), row=1, col=2)
-
-    # Marketing efficiency (Revenue / Marketing Spend)
-    if "Total_Marketing_Spend" in df.columns:
-        efficiency = df["Revenue"] / df["Total_Marketing_Spend"]
+    plot_idx = 0
+    if rev_col_name:
+        r, c = plot_idx // 2 + 1, plot_idx % 2 + 1
         fig_summary.add_trace(go.Scatter(
-            x=df[date_col], y=efficiency,
+            x=df[date_col_name], y=df[rev_col_name],
+            line=dict(color="#00D4AA", width=2), fill="tozeroy",
+            fillcolor="rgba(0,212,170,0.08)", showlegend=False,
+        ), row=r, col=c)
+        plot_idx += 1
+
+    if profit_col_name:
+        r, c = plot_idx // 2 + 1, plot_idx % 2 + 1
+        fig_summary.add_trace(go.Scatter(
+            x=df[date_col_name], y=df[profit_col_name],
+            line=dict(color="#00B4D8", width=2), fill="tozeroy",
+            fillcolor="rgba(0,180,216,0.08)", showlegend=False,
+        ), row=r, col=c)
+        plot_idx += 1
+
+    if mkt_col_name and rev_col_name:
+        efficiency = df[rev_col_name] / df[mkt_col_name]
+        r, c = plot_idx // 2 + 1, plot_idx % 2 + 1
+        fig_summary.add_trace(go.Scatter(
+            x=df[date_col_name], y=efficiency,
             line=dict(color="#7C3AED", width=2), showlegend=False,
-        ), row=2, col=1)
+        ), row=r, col=c)
+        plot_idx += 1
 
-    # Customer health
-    if "Customer_Base" in df.columns:
+    if cust_col_name:
+        r, c = plot_idx // 2 + 1, plot_idx % 2 + 1
         fig_summary.add_trace(go.Scatter(
-            x=df[date_col], y=df["Customer_Base"],
+            x=df[date_col_name], y=df[cust_col_name],
             line=dict(color="#FFB74D", width=2), fill="tozeroy",
             fillcolor="rgba(255,183,77,0.08)", showlegend=False,
-        ), row=2, col=2)
+        ), row=r, col=c)
 
     fig_summary.update_layout(
         template=STRATFORGE_TEMPLATE, height=550,
